@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Charge Point Simulator</title>
+
+  <style>
+    /* Tooltip container */
+    .tooltip {
+      padding-inline: 6px;
+      position: relative;
+      font-weight: bolder;
+      display: inline-block;
+      border: 1px solid rgb(187, 185, 185);
+      color:rgb(187, 185, 185);
+      border-radius: 50%;
+      font-size: smaller;
+
+    }
+    
+    /* Tooltip text */
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 120px;
+      background-color: rgb(244, 244, 244);
+      color: #4d4b4b;
+      text-align: center;
+      padding: 5px 0;
+      border-radius: 6px;
+      border: 1px solid rgb(187, 185, 185);
+      /* Position the tooltip text - see examples below! */
+      position: absolute;
+      z-index: 1;
+    }
+    
+    /* Show the tooltip text when you mouse over the tooltip container */
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+    }
+    </style>
+</head>
+
+<body style="margin: 0;">
+  <div style="display: flex; height: 100vh; margin: 0;">
+
+    <!-- Kiri -->
+    <div style="width: 50%; padding: 20px; box-sizing: border-box;">
+      <h2>Charge Point Config</h2>
+      <label for="wsUrl">WebSocket url: </label>
+      <input type="text" id="wsUrl" placeholder="url websocket" value="ws://localhost:3000/cp/DEV05">
+      <br>
+      <label for="cpVendor">Cp Vendor: </label>
+      <input type="text" id="cpVendor" placeholder="CP VENDOR" value="CP-SIMULATOR">
+      <br>
+      <label for="cpModel">Cp Model: </label>
+      <input type="text" id="cpModel" placeholder="CP MODEL" value="CP-SIMULATOR">
+      <br>
+      <button id="connectButton" onclick="connectToWs()">Connect</button>
+      <button id="bootNotificationButton" onclick="bootNotification()">BootNotification</button>
+
+      <br><br>
+      <!-- CONNECTOR -->
+      <div style="border: 1px solid black; padding: 10px;">
+        <b>Connector 1</b><br>
+        <!-- CONNECTOR 1 -->
+        <label>Card Id Tag: </label>
+        <input type="text" id="idTag1" placeholder="Tag id" value="2022010000002341">
+        <br>
+        <label>Connector ID 1:</label>
+        <input type="number" id="connectorId1" placeholder="Masukkan Connector ID 1" disabled value="1">
+        <label>Status:</label>
+        <input type="text" id="status1" disabled value="Available">
+        <label>Error Code:</label>
+        <input type="text" id="errorCode1" disabled value="NoError">
+        <br>
+
+        <label>Meter Start:</label>
+        <input type="number" id="meterStart1" disabled value="0">
+        <label>Voltage:</label>
+        <input type="number" id="voltage1" disabled value="220">
+        <label>Ampere:</label>
+        <input type="number" id="ampere1" value="16">
+        <div class="tooltip">i<span class="tooltiptext">Ganti Ampere nya biar cepet cik</span></div>
+        <br>
+        <button id="authorizeButton1" onclick="authorize(1)">Authorize</button>
+        <button id="statusNotificationButton1" onclick="statusNotification(1)">StatusNotification</button>
+        <button id="startTransactionButton1" onclick="startTransaction(1)">StartTransaction</button>
+        <button id="stopTransactionButton1" onclick="stopTransaction(1)">StopTransaction</button>
+        <button id="setToPreparingButton1" onclick="setConnectorStatus(1, 'Preparing')">Set to Preparing</button>
+      </div>
+
+      <br>
+
+      <div style="border: 1px solid black; padding: 10px;">
+        <b>Connector 2</b><br>
+        <!-- CONNECTOR 2 -->
+        <label>Card Id Tag: </label>
+        <input type="text" id="idTag2" placeholder="Tag id" value="2022010000002342">
+        <br>
+        <label>Connector ID 2:</label>
+        <input type="number" id="connectorId2" placeholder="Masukkan Connector ID 2" disabled value="2">
+
+        <label>Status:</label>
+        <input type="text" id="status2" disabled value="Available">
+
+        <label>Error Code:</label>
+        <input type="text" id="errorCode2" disabled value="NoError">
+        <br>
+        <label>Meter Start:</label>
+        <input type="number" id="meterStart2" disabled value="0">
+        <label>Voltage:</label>
+        <input type="number" id="voltage2" disabled value="220">
+        <label>Ampere:</label>
+        <input type="number" id="ampere2" value="32">
+        <br>
+        <button id="authorizeButton2" onclick="authorize(2)">Authorize</button>
+        <button id="statusNotificationButton2" onclick="statusNotification(2)">StatusNotification</button>
+        <button id="startTransactionButton2" onclick="startTransaction(2)">StartTransaction</button>
+        <button id="stopTransactionButton2" onclick="stopTransaction(2)">StopTransaction</button>
+        <button id="setToPreparingButton2" onclick="setConnectorStatus(2, 'Preparing')">Set to Preparing</button>
+      </div>
+  
+
+    </div>
+
+    <!-- ======================================================================================================== -->
+
+    <!-- Kanan -->
+    <div id="logConsole"
+      style="width: 50%; background-color: #f4f4f4; padding: 20px; box-sizing: border-box; overflow-y: auto;">
+
+      <h2>Output</h2>
+
+    </div>
+
+
+  </div>
+
+
+  <script src="button.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
+
+
+
