@@ -327,14 +327,20 @@ function handleIncomingMessage(event) {
 
 
 function remoteStartTransaction(connectorId, idTag, messageId) {
+  console.log("id tag nya adalah: ", idTag)
+  console.log("connector id nya ", connectorId)
+  if (!connectorId) {
+    socket.send(JSON.stringify([3, messageId, { status: "Rejected" }]));
+  }
+
   if (connectorId === 1) {
     const status = document.getElementById("status1").value;
     if (status !== "Preparing" || chargingInterval1) {
       socket.send(JSON.stringify([3, messageId, { status: "Rejected" }]));
       return;
     }
-    startTransaction(connectorId, idTag);
     socket.send(JSON.stringify([3, messageId, { status: "Accepted" }]))
+    startTransaction(connectorId, idTag);
   }
 
   if (connectorId === 2) {
@@ -343,8 +349,8 @@ function remoteStartTransaction(connectorId, idTag, messageId) {
       socket.send(JSON.stringify([3, messageId, { status: "Rejected" }]));
       return
     }
-    startTransaction(connectorId, idTag);
     socket.send(JSON.stringify([3, messageId, { status: "Accepted" }]))
+    startTransaction(connectorId, idTag);
   }
 
   return
@@ -433,14 +439,16 @@ function sendStartTransactionRequest(connectorId, idTag) {
       logToConsole("⚠️ Masukkan connectorId yang benar!");
       return reject("connectorId kosong");
     }
-
+    console.log("ini id tag di send start transaction request: ", idTag)
 
     let idTagValue;
     let meterValueWh
     if (!idTag) {
       if (connectorId === 1) {
         const meterValue = parseFloat(document.getElementById("meterStart1").value) || 0;
+        console.log("ini metervalue ", meterValue)
         meterValueWh = Math.round(meterValue * 1000);
+        console.log("ini metervalue wh", meterValueWh)
         idTagValue = document.getElementById("idTag1").value;
       }
       if (connectorId === 2) {
@@ -451,11 +459,21 @@ function sendStartTransactionRequest(connectorId, idTag) {
     }
     if (idTag) {
       idTagValue = idTag
+      if (connectorId === 1) {
+        const meterValue = parseFloat(document.getElementById("meterStart1").value) || 0;
+        meterValueWh = Math.round(meterValue * 1000);
+      }
+      if (connectorId === 2) {
+        const meterValue = parseFloat(document.getElementById("meterStart2").value) || 0;
+        meterValueWh = Math.round(meterValue * 1000);
+      }
     }
     if (!idTagValue) {
       logToConsole("⚠️ Masukkan idTag yang benar!");
       return reject("idTag kosong");
     }
+
+    console.log("ini meter values ", meterValueWh)
 
     const messageId = `startTransaction-${crypto.randomUUID()}`;
     const response = [
@@ -579,6 +597,8 @@ function sendMeterValuesRequest(connectorId) {
 
 
 function startTransaction(connectorId, idTag) {
+
+  console.log("masuk start trasanction")
   authorize(connectorId, idTag)
     .then(() => {
       sendStartTransactionRequest(connectorId, idTag)
