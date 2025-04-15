@@ -16,8 +16,8 @@ document.addEventListener("DOMContentLoaded", function () {
   bootNotificationButton.disabled = true;
   statusNotificationButton1.disabled = true;
   statusNotificationButton2.disabled = true;
-  startTransactionButton1.disabled = true;
-  startTransactionButton2.disabled = true;
+  startTransactionButton1.disabled = false;
+  startTransactionButton2.disabled = false;
   authorizeButton1.disabled = true
   authorizeButton2.disabled = true
   setToPreparingButton1.disabled = true

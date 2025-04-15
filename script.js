@@ -22,6 +22,8 @@ let runningConnectorTransactionId1;
 let runningConnectorTransactionId2;
 let runningIdTagConnector1;
 let runningIdTagConnector2;
+let runningIdTag1;
+let runningIdTag2;
 let meterValuesInterval1;
 let meterValuesInterval2;
 
@@ -123,7 +125,7 @@ function startReconnect() {
       if (!socket || socket.readyState === WebSocket.CLOSED) {
         connectWebSocket(lastWsUrl);
       }
-    }, 5000);
+    }, 30000);
   }
 }
 
@@ -160,7 +162,7 @@ function handleIncomingMessage(event) {
         remoteStartTransaction(payload.connectorId, payload.idTag, messageId)
       }
       if (action === "RemoteStopTransaction") {
-        remoteStopTransaction(payload.transactionId, messageId);
+        remoteStopTransaction(payload.transactionId, messageId, true);
       }
 
       if (action === "TriggerMessage") {
@@ -356,16 +358,16 @@ function remoteStartTransaction(connectorId, idTag, messageId) {
   return
 }
 
-function remoteStopTransaction(transactionId, messageId) {
+function remoteStopTransaction(transactionId, messageId, bool) {
   if (runningConnectorTransactionId1 === transactionId) {
     socket.send(JSON.stringify([3, messageId, { status: "Accepted" }]))
-    stopTransaction(1)
+    stopTransaction(1, bool)
     return
   }
 
   if (runningConnectorTransactionId2 === transactionId) {
     socket.send(JSON.stringify([3, messageId, { status: "Accepted" }]))
-    stopTransaction(2)
+    stopTransaction(2, bool)
     return
   }
   socket.send(JSON.stringify([3, messageId, { status: "Rejected" }]))
@@ -462,10 +464,12 @@ function sendStartTransactionRequest(connectorId, idTag) {
       if (connectorId === 1) {
         const meterValue = parseFloat(document.getElementById("meterStart1").value) || 0;
         meterValueWh = Math.round(meterValue * 1000);
+        runningIdTag1 = idTag
       }
       if (connectorId === 2) {
         const meterValue = parseFloat(document.getElementById("meterStart2").value) || 0;
         meterValueWh = Math.round(meterValue * 1000);
+        runningIdTag1 = idTag
       }
     }
     if (!idTagValue) {
@@ -578,6 +582,7 @@ function sendMeterValuesRequest(connectorId) {
     const meterValue = parseFloat(document.getElementById("meterStart1").value) || 0;
     const meterValueWh = (meterValue * 1000).toFixed(3); // Ubah dari kWh ke Wh
     const messageId = `meterValues-${crypto.randomUUID()}`;
+    // transactionId: runningConnectorTransactionId1,
     const response = [2, messageId, "MeterValues", { connectorId: connectorId, transactionId: runningConnectorTransactionId1, meterValue: [{ timestamp: new Date().toISOString(), sampledValue: [{ value: meterValueWh, context: "Sample.Periodic", format: "Raw", measurand: "Energy.Active.Import.Register", location: "Cable", unit: "Wh", },], },], },];
     logToConsole(`📤 MeterValue terkirim: ${JSON.stringify(response)}`);
     console.log(JSON.stringify(response));
@@ -588,6 +593,7 @@ function sendMeterValuesRequest(connectorId) {
     const meterValue = parseFloat(document.getElementById("meterStart2").value) || 0;
     const meterValueWh = (meterValue * 1000).toFixed(3); // Ubah dari kWh ke Wh
     const messageId = `meterValues-${crypto.randomUUID()}`;
+    // transactionId: runningConnectorTransactionId2,
     const response = [2, messageId, "MeterValues", { connectorId: connectorId, transactionId: runningConnectorTransactionId2, meterValue: [{ timestamp: new Date().toISOString(), sampledValue: [{ value: meterValueWh, context: "Sample.Periodic", format: "Raw", measurand: "Energy.Active.Import.Register", location: "Cable", unit: "Wh", },], },], },];
     logToConsole(`📤 MeterValue terkirim: ${JSON.stringify(response)}`);
     console.log(JSON.stringify(response));
@@ -596,7 +602,43 @@ function sendMeterValuesRequest(connectorId) {
 }
 
 
+function generate9DigitNumber() {
+  return Math.floor(100_000_000 + Math.random() * 900_000_000);
+}
+
 function startTransaction(connectorId, idTag) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    setConnectorStatus(connectorId, "Charging");
+    charging(connectorId)
+
+    if (connectorId === 1) {
+      runningConnectorTransactionId1 = generate9DigitNumber()
+      startTransactionButton1.disabled = true;
+      stopTransactionButton1.disabled = false;
+      setToPreparingButton1.disabled = true;
+
+      if (meterValuesInterval1) {
+        clearInterval(meterValuesInterval1);
+        console.log("⚠️ MeterValues sebelumnya dihentikan untuk menghindari duplikasi.");
+      }
+      meterValuesInterval1 = setMeterValuesInterval(connectorId);
+    }
+
+    if (connectorId === 2) {
+      runningConnectorTransactionId2 = generate9DigitNumber()
+      startTransactionButton2.disabled = true;
+      stopTransactionButton2.disabled = false;
+      setToPreparingButton2.disabled = true;
+
+
+      if (meterValuesInterval2) {
+        clearInterval(meterValuesInterval2);
+        console.log("⚠️ MeterValues sebelumnya dihentikan untuk menghindari duplikasi.");
+      }
+
+      meterValuesInterval2 = setMeterValuesInterval(connectorId)
+    }
+  }
 
   console.log("masuk start trasanction")
   authorize(connectorId, idTag)
@@ -643,7 +685,7 @@ function startTransaction(connectorId, idTag) {
     });
 }
 
-function stopTransaction(connectorId) {
+function stopTransaction(connectorId, remoteIdTagBool) {
   let meterValueWh;
   let idTag;
   let runningConnectorTransactionId;
@@ -661,7 +703,12 @@ function stopTransaction(connectorId) {
     const meterValue = parseFloat(document.getElementById("meterStart1").value) || 0;
 
     meterValueWh = Math.round(meterValue * 1000); // Konversi ke Wh tanpa pembulatan aneh
-    idTag = document.getElementById("idTag1").value
+    if (!remoteIdTagBool) {
+      idTag = document.getElementById("idTag1").value
+    } else {
+      idTag = runningIdTag1;
+    }
+
     runningConnectorTransactionId = runningConnectorTransactionId1
 
   }
@@ -677,7 +724,11 @@ function stopTransaction(connectorId) {
     const meterValue = parseFloat(document.getElementById("meterStart2").value) || 0;
 
     meterValueWh = Math.round(meterValue * 1000); // Konversi ke Wh tanpa pembulatan aneh
-    idTag = document.getElementById("idTag2").value
+    if (!remoteIdTagBool) {
+      idTag = document.getElementById("idTag2").value
+    } else {
+      idTag = runningIdTag2
+    }
     runningConnectorTransactionId = runningConnectorTransactionId2
   }
 
@@ -741,6 +792,9 @@ function statusNotification(connectorId) {
         status: status1Value,
       },
     ];
+    if (!socket) {
+      return
+    }
     socket.send(JSON.stringify(response));
     console.log(response);
     logToConsole(`📤 StatusNotification terkirim: ${JSON.stringify(response)}`);
@@ -769,8 +823,9 @@ function statusNotification(connectorId) {
   }
 }
 
-
-
+function disconnectWs() {
+  socket.close(1000, "Close by user");
+}
 
 
 // Custom WebSocket URL & Card Id
